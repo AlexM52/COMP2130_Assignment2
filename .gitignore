@@ -1,0 +1,8 @@
+# Ignore all files
+*
+
+# except C source files
+!*.c
+
+# and the gitignore file
+!.gitignore
