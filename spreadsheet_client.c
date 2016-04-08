@@ -17,6 +17,22 @@
 #define	SERVER_IP	"127.0.0.1"
 #define SERVER_PORT	60000
 
+// if a string ends with a \n, replace it with a \0
+// otherwise, no change. Returns 1 if stripped \n, else 0.
+int stripnl(char *string)
+{
+	int last;
+	last = strlen(string)-1;
+	if(string[last] == '\n')
+	{
+		string[last] = '\0';
+		return 1;
+	}else
+	{
+		return 0;
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	int	sock, r;
@@ -53,6 +69,7 @@ int main(int argc, char *argv[])
         // scanf("%s", msg);
         fgets(msg, 19, stdin);
         // printf("%s\n", msg);
+        stripnl(msg);
         if (strncmp(msg ,"quit", 4) == 0)
             break;
         // strcpy(buf,text);

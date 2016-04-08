@@ -85,15 +85,15 @@ int main(int argc, char *argv[])
 	    // // args[0] = in_buffer;
 	    // // args[1] = NULL;
 	    // args[n] = NULL;
-	    id = fork();
-	    if(id == 0)
-	    {
-	    	execvp(args[0], args);
-	    }else
-	    {
-	    	wait();
-	    	printf("\n");
-	    }
+	    // id = fork();
+	    // if(id == 0)
+	    // {
+	    // 	execvp(args[0], args);
+	    // }else
+	    // {
+	    // 	wait();
+	    // 	printf("\n");
+	    // }
     }
 
     // close sockets and exit
