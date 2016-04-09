@@ -14,6 +14,23 @@
 #include <netinet/in.h>
 #include <string.h>
 
+// Takes a command input string and an array of strings as args.
+// tokenizes string and stores the tokens in the array. Returns 
+// # of tokens.
+int split_input(char *string, char *array[])
+{
+    array[0] = strtok(string, " \0");
+    int n = 1;
+    char *t;
+    while(t = strtok(NULL, " \0"))
+    {
+    	array[n] = t;
+    	n++;
+    }
+    array[n] = NULL;
+    return n;
+}
+
 int main(int argc, char *argv[])
 {
 	int	sock_main, sock_cli, r, addr_size;
@@ -63,14 +80,7 @@ int main(int argc, char *argv[])
     	rcvd_bytes = recv(sock_cli, in_buffer, BUF_SIZE, 0);
     	in_buffer[rcvd_bytes]=0;
         printf("Received: %s\n", in_buffer);
-        args[0] = strtok(in_buffer, " \n\0");
-	    n = 1;
-	    while(t = strtok(NULL, " \n\0"))
-	    {
-	    	args[n] = t;
-	    	n++;
-	    }
-	    args[n] = NULL;
+	    n = split_input(in_buffer, args);
 	    // if (strcmp(in_buffer, "finish") == 0)
 	    //     break;
 	    if (strcmp(args[0], "finish") == 0)
@@ -94,6 +104,14 @@ int main(int argc, char *argv[])
 	    // 	wait();
 	    // 	printf("\n");
 	    // }
+	    
+	    // print tokens just to verify they were processed properly
+	    printf("Tokens:\n");
+	    int x;
+	    for(x=0; x<n; x++)
+	    {
+	        printf(" -%s\n", args[x]);
+	    }
     }
 
     // close sockets and exit
