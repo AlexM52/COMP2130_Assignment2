@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <stdlib.h>
 
 // Takes a command input string and an array of strings as args.
 // tokenizes string and stores the tokens in the array. Returns 
@@ -29,6 +30,63 @@ int split_input(char *string, char *array[])
     }
     array[n] = NULL;
     return n;
+}
+
+// manage client socket
+int cli_sock_loop(int socket)
+{
+    const int BUF_SIZE = 1024;
+    int rcvd_bytes;
+    char in_buffer[BUF_SIZE];
+    // sock_cli=accept(sock_main, (struct sockaddr *) &cli_addr, &addr_size);
+
+    // handle client requests
+    char *args[5];
+    char *t;
+    int n;
+    int id;
+    while(1)
+    {
+    	rcvd_bytes = recv(socket, in_buffer, BUF_SIZE, 0);
+    	in_buffer[rcvd_bytes]=0;
+        printf("Received: %s\n", in_buffer);
+	    n = split_input(in_buffer, args);
+	    // if (strcmp(in_buffer, "finish") == 0)
+	    //     break;
+	    if (strcmp(args[0], "finish") == 0)
+	        break;
+	    // args[0] = strtok(in_buffer, " \n\0");
+	    // n = 1;
+	    // while(t = strtok(NULL, " \n\0"))
+	    // {
+	    // 	args[n] = t;
+	    // 	n++;
+	    // }
+	    // // args[0] = in_buffer;
+	    // // args[1] = NULL;
+	    // args[n] = NULL;
+	    // id = fork();
+	    // if(id == 0)
+	    // {
+	    // 	execvp(args[0], args);
+	    // }else
+	    // {
+	    // 	wait();
+	    // 	printf("\n");
+	    // }
+	    
+	    // print tokens just to verify they were processed properly
+	    printf("Tokens:\n");
+	    int x;
+	    for(x=0; x<n; x++)
+	    {
+	        printf(" -%s\n", args[x]);
+	    }
+    }
+
+    // close sockets and exit
+    printf("Closing client socket...\n");
+    close(socket);
 }
 
 int main(int argc, char *argv[])
@@ -69,54 +127,65 @@ int main(int argc, char *argv[])
     // set up socket to manage client
     addr_size=sizeof(cli_addr);
     sock_cli=accept(sock_main, (struct sockaddr *) &cli_addr, &addr_size);
-
-    // handle client requests
-    char *args[5];
-    char *t;
-    int n;
+    // cli_sock_loop(sock_cli);
     int id;
-    while(1)
+    id = fork();
+    if(id == 0)
     {
-    	rcvd_bytes = recv(sock_cli, in_buffer, BUF_SIZE, 0);
-    	in_buffer[rcvd_bytes]=0;
-        printf("Received: %s\n", in_buffer);
-	    n = split_input(in_buffer, args);
-	    // if (strcmp(in_buffer, "finish") == 0)
-	    //     break;
-	    if (strcmp(args[0], "finish") == 0)
-	        break;
-	    // args[0] = strtok(in_buffer, " \n\0");
-	    // n = 1;
-	    // while(t = strtok(NULL, " \n\0"))
-	    // {
-	    // 	args[n] = t;
-	    // 	n++;
-	    // }
-	    // // args[0] = in_buffer;
-	    // // args[1] = NULL;
-	    // args[n] = NULL;
-	    // id = fork();
-	    // if(id == 0)
-	    // {
-	    // 	execvp(args[0], args);
-	    // }else
-	    // {
-	    // 	wait();
-	    // 	printf("\n");
-	    // }
-	    
-	    // print tokens just to verify they were processed properly
-	    printf("Tokens:\n");
-	    int x;
-	    for(x=0; x<n; x++)
-	    {
-	        printf(" -%s\n", args[x]);
-	    }
+        cli_sock_loop(sock_cli);
+        return 0;
+    }else
+    {
+        wait(-1);
     }
 
-    // close sockets and exit
-    printf("Closing client socket...\n");
-    close(sock_cli);
+    // // handle client requests
+    // char *args[5];
+    // char *t;
+    // int n;
+    // int id;
+    // while(1)
+    // {
+    // 	rcvd_bytes = recv(sock_cli, in_buffer, BUF_SIZE, 0);
+    // 	in_buffer[rcvd_bytes]=0;
+    //     printf("Received: %s\n", in_buffer);
+	   // n = split_input(in_buffer, args);
+	   // // if (strcmp(in_buffer, "finish") == 0)
+	   // //     break;
+	   // if (strcmp(args[0], "finish") == 0)
+	   //     break;
+	   // // args[0] = strtok(in_buffer, " \n\0");
+	   // // n = 1;
+	   // // while(t = strtok(NULL, " \n\0"))
+	   // // {
+	   // // 	args[n] = t;
+	   // // 	n++;
+	   // // }
+	   // // // args[0] = in_buffer;
+	   // // // args[1] = NULL;
+	   // // args[n] = NULL;
+	   // // id = fork();
+	   // // if(id == 0)
+	   // // {
+	   // // 	execvp(args[0], args);
+	   // // }else
+	   // // {
+	   // // 	wait();
+	   // // 	printf("\n");
+	   // // }
+	    
+	   // // print tokens just to verify they were processed properly
+	   // printf("Tokens:\n");
+	   // int x;
+	   // for(x=0; x<n; x++)
+	   // {
+	   //     printf(" -%s\n", args[x]);
+	   // }
+    // }
+
+    // // close sockets and exit
+    // printf("Closing client socket...\n");
+    // close(sock_cli);
     printf("Closing main socket...\n");
     close(sock_main);
     printf("DONE.\n");
