@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-// #define BUF_SIZE	1024
+#define BUF_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
 #define SERVER_PORT	60000
 
@@ -41,6 +41,9 @@ int main(int argc, char *argv[])
     struct sockaddr_in	dest_addr;
     char msg[50];//, buf[BUF_SIZE];
     int	bytes_sent;
+    struct sockaddr_in r_addr;
+    int r_addr_size, bytes_rcvd;
+    char rbuf[BUF_SIZE];
 
     // create socket
     sock=socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -63,6 +66,32 @@ int main(int argc, char *argv[])
         if (strncmp(msg ,"quit", 4) == 0)
             break;
         bytes_sent = sendto(sock, msg, strlen(msg), 0, (struct sockaddr *) &dest_addr, sizeof(dest_addr));
+        r_addr_size = sizeof(r_addr);
+        bytes_rcvd = recvfrom(sock, rbuf, BUF_SIZE, 0, (struct sockaddr *)&r_addr, &r_addr_size);
+        if(bytes_rcvd > 0)
+        {
+            // Append null terminator to message
+            rbuf[bytes_rcvd] = '\0';
+            // printf("Response: %s\n", rbuf);
+            
+            if(strcmp(rbuf, "lock_wait")==0)
+            {
+                printf("Request queued. Waiting...");
+                fflush(stdout);
+                bytes_rcvd = recvfrom(sock, rbuf, BUF_SIZE, 0, (struct sockaddr *)&r_addr, &r_addr_size);
+                if(bytes_rcvd > 0)
+                {
+                    rbuf[bytes_rcvd] = '\0';
+                    printf("\n%s\n", rbuf);
+                }else
+                {
+                    printf("Error: empty response.\n");
+                }
+            }else
+            {
+                printf("Response: %s\n", rbuf);
+            }
+        }
     }
 
     // close socket and exit
