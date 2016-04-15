@@ -19,6 +19,28 @@
 #define	SERVER_IP	"127.0.0.1"
 #define SERVER_PORT	60000
 
+const int maxNumRows = 9;
+
+typedef struct{
+	char operand[4];
+}opSet;//this allows for an array of operands instead of a list concatenation
+
+typedef struct{
+	char operation[10];
+	opSet operandSet[2];//declares spaces for 10 possible operands, each having a max of 10 elements
+}formulaWhole;//allows one to store the various formula elements
+
+//Simple operations - the above structs have not been included as yet
+typedef struct{
+	char text[20];
+	formulaWhole formula;
+	float numeric;
+}contentType;
+
+typedef struct{
+	contentType content;
+}workbook;
+
 // if a string ends with a \n, replace it with a \0
 // otherwise, no change. Returns 1 if stripped \n, else 0.
 int stripnl(char *string)
@@ -35,6 +57,73 @@ int stripnl(char *string)
 	}
 }
 
+// Takes a command input string and an array of strings as args.
+// tokenizes string and stores the tokens in the array. Returns 
+// # of tokens.
+int split_input(char *string, char *array[])
+{
+    array[0] = strtok(string, " \0");
+    int n = 1;
+    char *t;
+    while(t = strtok(NULL, " \0"))
+    {
+    	array[n] = t;
+    	n++;
+    }
+    array[n] = NULL;
+    return n;
+}
+
+// // receive a sheet
+// int rcv_sheet(int sock, struct sockaddr_in rad, int rlen)
+// {
+    
+// }
+
+//Show Sheet
+void showSheet( workbook spreadSheet[][maxNumRows] ){
+	int numRows = sizeof(spreadSheet[0])/sizeof(spreadSheet[0][0]);
+	int i,j;
+	int ascii = 65;
+	
+	printf("\n\n\t");
+
+	//Display headers (A-I)
+	for (i=ascii; i<(ascii+numRows); i++){
+		printf("%c\t",i);
+	}
+	printf("\n");	
+	//Display other content
+	for(i=0; i<numRows; i++){
+		printf("%d",i+1); //displays row number (1-9)
+		for(j=0; j<numRows; j++){
+			//display content only if data has been entered; otherwise, show empty values
+			if(strlen(spreadSheet[i][j].content.text)>0)
+				printf("\t%s",spreadSheet[i][j].content.text);
+			else
+				printf("\t%.2f",spreadSheet[i][j].content.numeric);
+		}
+		printf("\n");
+	}
+}//end show sheet
+
+//Initialize Sheet
+void initializeSheet( workbook spreadSheet[][maxNumRows] ){
+	int numRows = sizeof(spreadSheet[0])/sizeof(spreadSheet[0][0]);
+	int i,j;	
+
+	//Initialize Content
+	for (i=0; i<numRows; i++){
+		for(j=0; j<numRows; j++){
+			strcpy(spreadSheet[i][j].content.text,"");
+			strcpy(spreadSheet[i][j].content.formula.operation,"");
+			strcpy(spreadSheet[i][j].content.formula.operandSet[0].operand,"");
+			strcpy(spreadSheet[i][j].content.formula.operandSet[1].operand,"");
+			spreadSheet[i][j].content.numeric = 0;
+		}
+	}
+}//end initialize sheet
+
 int main(int argc, char *argv[])
 {
 	int	sock;
@@ -44,6 +133,10 @@ int main(int argc, char *argv[])
     struct sockaddr_in r_addr;
     int r_addr_size, bytes_rcvd;
     char rbuf[BUF_SIZE];
+    
+    char *token[10];
+    workbook sheet[9][maxNumRows];
+    initializeSheet(sheet);
 
     // create socket
     sock=socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -87,6 +180,19 @@ int main(int argc, char *argv[])
                 {
                     printf("Error: empty response.\n");
                 }
+            }else if(strcmp(rbuf, "sending_sheet")==0)
+            {
+                int x, y;
+                // split_input(rbuf, token);
+                bytes_rcvd = recvfrom(sock, rbuf, BUF_SIZE, 0, (struct sockaddr *)&r_addr, &r_addr_size);
+                split_input(rbuf, token);
+                while(strcmp(token[0], "done") != 0)
+                {
+                    x = atoi(token[1]);
+                    y = atoi(token[2]);
+                    strcpy(sheet[x][y].content.text, token[3]);
+                }
+                showSheet(sheet);
             }else
             {
                 printf("Response: %s\n", rbuf);
