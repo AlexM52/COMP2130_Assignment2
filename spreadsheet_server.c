@@ -3,7 +3,7 @@
 @author:	Lewainne Vidal(620052899), Alex McDoom(62-0025254)
 @course:	COMP2130 (Systems Programming)
 @lecturer:	Kevin Miller
-@dateDue:	April 14, 2016
+@dateDue:	April 15, 2016
 @task:	Assignment 2 - Implement spreadsheet server	
 */
 
@@ -21,7 +21,7 @@
 
 #define     PORT        60000
 #define     BUF_SIZE    1024
-#define     LOCK_TOUT   20
+#define     LOCK_TOUT   60
 
 
 /*Constants*/
@@ -522,6 +522,93 @@ char lowerCase(char value){
 }//end lowercase
 
 
+// save function
+int saveWorksheet(worksheet sheet[][maxNumRows])
+{
+    int r;
+    // open up a file
+    FILE *fpt;
+    fpt = fopen("spreadsheet.dat", "w");
+    if(fpt == NULL)
+        return 0;
+    //variables
+    int i, j;
+    worksheet cell;
+    char s[100] = "";
+    char tf[50];
+    // for every cell in the sheet
+    for(i=0; i<9; i++)
+    {
+        for(j=0; j<9; j++)
+        {
+            // get the cell
+            worksheet cell = sheet[i][j];
+            
+            // if cell text empty
+            if(strlen(cell.content.text)==0)
+            {
+                // append special string
+                strcat(s, "%%");
+            }else
+            {
+                // append cell text + space
+                strcat(s, cell.content.text);
+                strcat(s, " ");
+            }
+            // append cell numeric as string
+            sprintf(tf, "%f", cell.content.numeric);
+            strcat(s, tf);
+            strcat(s, " ");
+            // generate and append formula string
+            strcat(s, "=");
+            strcat(s, cell.content.formula.operation);
+            strcat(s, "(");
+            strcat(s, cell.content.formula.operandSet[0].operand);
+            strcat(s, ",");
+            strcat(s, cell.content.formula.operandSet[1].operand);
+            strcat(s, ")");
+            
+            // write cell representation to file
+            r = fprintf(fpt, "%s\n");
+        }
+    }
+    
+    // close the file
+    fclose(fpt);
+    return r;
+}
+
+int readWorksheet(worksheet sheet[][maxNumRows]){
+	int i,j,ch,count=0;
+	worksheet cell;
+	fpt = fopen("spreadsheet.dat","r");
+// 	filename = "spreadsheet.dat";
+	
+	//Read from file
+	//Get number of lines in file
+	//Iterate using that number
+	//Store the value associated with each index re: text/numeric/formula[operation[operand1,operand2]]
+	//Place values found in spreadsheet
+	do{
+	   ch = fgetc(fp);
+	   if( ch== '\n') 
+	   	count++;   
+	}while( ch != EOF );	
+	
+	FILE *fpt;
+	char dataSpace[100];
+	
+	fpt=fopen(filename,"r");
+		fread(dataSpace,1,100,fpt);
+		text[100]=0;
+		printf("%s\n",text);
+		
+		for(i=0; i<count; i++){
+			//
+		}
+	fclose(fpt);
+	 return 0;
+}
 
 //========================= SERVER.. =====================//
 // struct to hold an ip:port address pair
@@ -703,7 +790,6 @@ int unlock()
 }
 
 //============================== MAIN ==============================//
-
 int main(int argc, char *argv[])
 {
     // socket vars
@@ -794,12 +880,6 @@ int main(int argc, char *argv[])
                     if((elock == 1) && (locking_cli->addr == cli_addr.sin_addr.s_addr) && (locking_cli->port == cli_addr.sin_port))
                     {
                         char resp[BUF_SIZE];
-                        // r = 0;
-                        // while(token[r] != NULL)
-                        // {
-                        //     printf("-%s\n", token[r]);
-                        //     r++;
-                        // }
                         //get cell to edit
                         strncpy(intendedCell, token[1], 2);
                         /*Calculate the array equivalent of the coordinates given. i.e [A,1] == [0,0]*/
@@ -813,7 +893,8 @@ int main(int argc, char *argv[])
                 		//replace
                 		placeData(token[2],rowIndex,columnIndex,sheet);
                 		
-                		showSheet(sheet);
+                // 		showSheet(sheet);
+                		saveWorksheet(sheet);
                 		
                         //reset timout
                         alarm(LOCK_TOUT);
@@ -830,7 +911,7 @@ int main(int argc, char *argv[])
                     oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "unlock_ok");
                 }else if(strcmp(token[0], "view_sheet") == 0)
                 {
-                    printf("Got to view_sheet..\n");
+                    // printf("Got to view_sheet..\n");
                     char data[BUF_SIZE];
                     oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "sending_sheet");
                     sleep(2);
@@ -847,6 +928,22 @@ int main(int argc, char *argv[])
                         }
                     }
                     oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "done");
+                }else if(strcmp(token[0], "save_sheet") == 0){
+                    printf("Saving sheet..\n");
+                    int res;
+                    res = saveWorksheet(sheet);
+                    if(res == 0)
+                        oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "Save failed.");
+                    else
+                        oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "Spreadsheet saved.");
+                }else if(strcmp(token[0], "load_sheet") == 0){
+                    printf("Loading sheet..\n");
+                    int res;
+                    res = saveWorksheet(sheet);
+                    if(res == 0)
+                        oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "Load failed.");
+                    else
+                        oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "Spreadsheet loaded.");
                 }
             }
         }
