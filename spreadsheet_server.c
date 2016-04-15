@@ -830,6 +830,7 @@ int main(int argc, char *argv[])
                     oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "unlock_ok");
                 }else if(strcmp(token[0], "view_sheet") == 0)
                 {
+                    printf("Got to view_sheet..\n");
                     char data[BUF_SIZE];
                     oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "sending_sheet");
                     sleep(2);
@@ -838,9 +839,10 @@ int main(int argc, char *argv[])
                         for(j=0; j<9; j++)
                         {
                             if(strlen(sheet[i][j].content.text) > 0)
-                    			sprintf(data, "cell %d %d %s", i, j, sheet[i][j].content.text);	
+                    			sprintf(data, "cell %d %d %s", i, j, sheet[i][j].content.text);
                     		else
-                    			sprintf(data, "cell %d %d %f", i, j, sheet[i][j].content.numeric);
+                    			sprintf(data, "cell %d %d %.2f", i, j, sheet[i][j].content.numeric);
+                    // 		printf("%s\n", data);
                 			oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, data);
                         }
                     }

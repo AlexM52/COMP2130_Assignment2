@@ -191,6 +191,9 @@ int main(int argc, char *argv[])
                     x = atoi(token[1]);
                     y = atoi(token[2]);
                     strcpy(sheet[x][y].content.text, token[3]);
+                    // printf("%d, %d, %s\n", x, y, token[3]);
+                    bytes_rcvd = recvfrom(sock, rbuf, BUF_SIZE, 0, (struct sockaddr *)&r_addr, &r_addr_size);
+                    split_input(rbuf, token);
                 }
                 showSheet(sheet);
             }else
