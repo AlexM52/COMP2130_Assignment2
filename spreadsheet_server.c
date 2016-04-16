@@ -523,7 +523,7 @@ char lowerCase(char value){
 
 
 // save function
-int saveWorksheet(worksheet sheet[][maxNumRows])
+int saveWorksheet(workbook sheet[][maxNumRows])
 {
     int r;
     // open up a file
@@ -533,7 +533,7 @@ int saveWorksheet(worksheet sheet[][maxNumRows])
         return 0;
     //variables
     int i, j;
-    worksheet cell;
+    workbook cell;
     char s[100] = "";
     char tf[50];
     // for every cell in the sheet
@@ -542,13 +542,13 @@ int saveWorksheet(worksheet sheet[][maxNumRows])
         for(j=0; j<9; j++)
         {
             // get the cell
-            worksheet cell = sheet[i][j];
+            cell = sheet[i][j];
             
             // if cell text empty
             if(strlen(cell.content.text)==0)
             {
                 // append special string
-                strcat(s, "%%");
+                strcat(s, "%% ");
             }else
             {
                 // append cell text + space
@@ -569,43 +569,82 @@ int saveWorksheet(worksheet sheet[][maxNumRows])
             strcat(s, ")");
             
             // write cell representation to file
-            r = fprintf(fpt, "%s\n");
+            r = fprintf(fpt, "%s\n", s);
+            // reset buffer
+            strcpy(s, "");
         }
     }
     
     // close the file
     fclose(fpt);
+    
+                        printf("Got here\n");
     return r;
 }
 
-int readWorksheet(worksheet sheet[][maxNumRows]){
-	int i,j,ch,count=0;
-	worksheet cell;
-	fpt = fopen("spreadsheet.dat","r");
-// 	filename = "spreadsheet.dat";
+int readWorksheet(workbook sheet[][maxNumRows]){
+	int i,j;//,ch,count=0;
+	workbook cell;
+	FILE *fpt = fopen("spreadsheet.dat","r");
+	char filename[50] = "spreadsheet.dat";
 	
 	//Read from file
 	//Get number of lines in file
 	//Iterate using that number
 	//Store the value associated with each index re: text/numeric/formula[operation[operand1,operand2]]
 	//Place values found in spreadsheet
-	do{
-	   ch = fgetc(fp);
-	   if( ch== '\n') 
-	   	count++;   
-	}while( ch != EOF );	
+// 	do{
+// 	   ch = fgetc(fpt);
+// 	   if( ch== '\n') 
+// 	   	count++;   
+// 	}while( ch != EOF );
+// 	fclose(fpt);
 	
-	FILE *fpt;
-	char dataSpace[100];
+// 	FILE *fpt;
+// 	char dataSpace[100];
+    char *line = NULL;
+    size_t len = 0;
+    char *token[10];
 	
 	fpt=fopen(filename,"r");
-		fread(dataSpace,1,100,fpt);
-		text[100]=0;
-		printf("%s\n",text);
+// 		fread(dataSpace,1,100,fpt);
+// 		char text[100]="";
+// 		printf("%s\n",text);
 		
-		for(i=0; i<count; i++){
-			//
-		}
+// 		for(i=0; i<count; i++){
+// 			//
+// 		}
+    initializeSheet(sheet);
+    for(i=0; i<9; i++){
+        for(j=0; j<9; j++){
+            getline(&line, &len, fpt);
+            // printf("Retrieved line of length %zu :\n", read);
+            printf("%s", line);
+            split_input(line, token);
+            cell = sheet[i][j];
+            if(strcmp(token[0], "%%") == 0)
+            {
+                strcpy(cell.content.text, "");
+            }else
+            {
+                strcpy(cell.content.text, token[0]);
+            }
+            cell.content.numeric = atof(token[1]);
+            if(token[2][1] == '(')
+            {
+                strcpy(cell.content.formula.operation, "");
+                strcpy(cell.content.formula.operandSet[0].operand, "");
+                strcpy(cell.content.formula.operandSet[1].operand, "");
+            }else
+            {
+                strcpy(cell.content.formula.operation, strtok(token[2], "=("));
+                strcpy(cell.content.formula.operandSet[0].operand, strtok(NULL, ","));
+                strcpy(cell.content.formula.operandSet[1].operand, strtok(NULL, ")"));
+            }
+            // free(line);
+        }
+    }
+    free(line);
 	fclose(fpt);
 	 return 0;
 }
@@ -753,11 +792,12 @@ int lock(unsigned long ip, unsigned short port)
     locking_cli->addr = ip;
     locking_cli->port = port;
     //set alarm to timeout if this lock stays too long
-    alarm(LOCK_TOUT);
+    // alarm(LOCK_TOUT);
     
     // notify client
     char msg[BUF_SIZE];
-    sprintf(msg, "lock_ok. Lock expires after %ds of inactivity.", LOCK_TOUT);
+    // sprintf(msg, "lock_ok. Lock expires after %ds of inactivity.", LOCK_TOUT);
+    sprintf(msg, "lock_ok.");
     oneshot_msg(ip, port, msg);
     
     return 1;
@@ -897,7 +937,8 @@ int main(int argc, char *argv[])
                 		saveWorksheet(sheet);
                 		
                         //reset timout
-                        alarm(LOCK_TOUT);
+                        // alarm(LOCK_TOUT);
+                        printf("Got here\n");
                         oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, resp);
                     }else
                     {
@@ -939,7 +980,7 @@ int main(int argc, char *argv[])
                 }else if(strcmp(token[0], "load_sheet") == 0){
                     printf("Loading sheet..\n");
                     int res;
-                    res = saveWorksheet(sheet);
+                    res = readWorksheet(sheet);
                     if(res == 0)
                         oneshot_msg(cli_addr.sin_addr.s_addr, cli_addr.sin_port, "Load failed.");
                     else
